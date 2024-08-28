@@ -433,10 +433,12 @@ pub fn compile(
         program,
         metadata.ap_change_info.function_ap_change.clone(),
     )
-    .map_err(CompilationError::ProgramRegistryError)?;
-    validate_metadata(program, &registry, metadata)?;
+    .map_err(CompilationError::ProgramRegistryError)
+    .unwrap();
+    validate_metadata(program, &registry, metadata).unwrap();
     let type_sizes = get_type_size_map(program, &registry)
-        .ok_or(CompilationError::FailedBuildingTypeInformation)?;
+        .ok_or(CompilationError::FailedBuildingTypeInformation)
+        .unwrap();
     let mut backwards_jump_indices = UnorderedHashSet::<_>::default();
     for (statement_id, statement) in program.statements.iter().enumerate() {
         if let Statement::Invocation(invocation) = statement {
@@ -457,7 +459,7 @@ pub fn compile(
         config.gas_usage_check,
         &type_sizes,
     )
-    .map_err(|err| Box::new(err.into()))?;
+    .unwrap();
 
     let circuits_info =
         CircuitsInfo::new(&registry, program.type_declarations.iter().map(|td| &td.id))?;
@@ -473,7 +475,7 @@ pub fn compile(
             Statement::Return(ref_ids) => {
                 let (annotations, return_refs) = program_annotations
                     .get_annotations_after_take_args(statement_idx, ref_ids.iter())
-                    .map_err(|err| Box::new(err.into()))?;
+                    .unwrap();
                 return_refs.iter().for_each(|r| r.validate(&type_sizes));
 
                 if let Some(var_id) = annotations.refs.keys().next() {
@@ -491,13 +493,15 @@ pub fn compile(
                         metadata,
                         &return_refs,
                     )
-                    .map_err(|err| Box::new(err.into()))?;
-                check_references_on_stack(&return_refs).map_err(|error| match error {
-                    InvocationError::InvalidReferenceExpressionForArgument => {
-                        CompilationError::ReturnArgumentsNotOnStack { statement_idx }
-                    }
-                    _ => CompilationError::InvocationError { statement_idx, error },
-                })?;
+                    .unwrap();
+                check_references_on_stack(&return_refs)
+                    .map_err(|error| match error {
+                        InvocationError::InvalidReferenceExpressionForArgument => {
+                            CompilationError::ReturnArgumentsNotOnStack { statement_idx }
+                        }
+                        _ => CompilationError::InvocationError { statement_idx, error },
+                    })
+                    .unwrap();
 
                 let start_offset = program_offset;
 
@@ -518,7 +522,7 @@ pub fn compile(
             Statement::Invocation(invocation) => {
                 let (annotations, invoke_refs) = program_annotations
                     .get_annotations_after_take_args(statement_idx, invocation.args.iter())
-                    .map_err(|err| Box::new(err.into()))?;
+                    .unwrap();
 
                 let libfunc = registry
                     .get_libfunc(&invocation.libfunc_id)
@@ -530,10 +534,9 @@ pub fn compile(
                     .iter()
                     .map(|param_signature| param_signature.ty.clone())
                     .collect();
-                check_types_match(&invoke_refs, &param_types).map_err(|error| {
-                    Box::new(AnnotationError::ReferencesError { statement_idx, error }.into())
-                })?;
+                check_types_match(&invoke_refs, &param_types).unwrap();
                 invoke_refs.iter().for_each(|r| r.validate(&type_sizes));
+                dbg!(&invocation);
                 let compiled_invocation = compile_invocation(
                     ProgramInfo {
                         metadata,
@@ -549,7 +552,7 @@ pub fn compile(
                     &invoke_refs,
                     annotations.environment,
                 )
-                .map_err(|error| CompilationError::InvocationError { statement_idx, error })?;
+                .unwrap();
 
                 let start_offset = program_offset;
 
@@ -614,7 +617,7 @@ pub fn compile(
                             branch_changes,
                             branching_libfunc,
                         )
-                        .map_err(|err| Box::new(err.into()))?;
+                        .unwrap();
                 }
             }
         }
@@ -627,14 +630,16 @@ pub fn compile(
     let const_segments_max_size = config
         .max_bytecode_size
         .checked_sub(program_offset)
-        .ok_or_else(|| Box::new(CompilationError::CodeSizeLimitExceeded))?;
+        .ok_or_else(|| Box::new(CompilationError::CodeSizeLimitExceeded))
+        .unwrap();
     let consts_info = ConstsInfo::new(
         &registry,
         &type_sizes,
         program.libfunc_declarations.iter().map(|ld| &ld.id),
         &circuits_info.circuits,
         const_segments_max_size,
-    )?;
+    )
+    .unwrap();
     relocate_instructions(&relocations, &statement_offsets, &consts_info, &mut instructions);
 
     Ok(CairoProgram {

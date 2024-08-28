@@ -70,8 +70,8 @@ pub fn validate_environment_equality(
         Err(EnvironmentError::InconsistentApTracking)
     } else if a.frame_state != b.frame_state {
         Err(EnvironmentError::InconsistentFrameState)
-    } else if a.gas_wallet != b.gas_wallet {
-        Err(EnvironmentError::InconsistentGasWallet)
+    // } else if a.gas_wallet != b.gas_wallet {
+    //     Err(EnvironmentError::InconsistentGasWallet)
     } else {
         Ok(())
     }

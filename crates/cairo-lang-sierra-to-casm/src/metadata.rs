@@ -93,11 +93,11 @@ pub fn calc_metadata(
             )
         })
         .collect();
-    let pre_gas_info_new = compute_precost_info(program)?;
+    let pre_gas_info_new = compute_precost_info(program).unwrap();
     let pre_gas_info = if config.linear_gas_solver {
         pre_gas_info_new
     } else {
-        let pre_gas_info_old = calc_gas_precost_info(program, pre_function_set_costs)?;
+        let pre_gas_info_old = calc_gas_precost_info(program, pre_function_set_costs).unwrap();
         if !config.skip_non_linear_solver_comparisons {
             pre_gas_info_old.assert_eq_variables(&pre_gas_info_new, program);
             pre_gas_info_old.assert_eq_functions(&pre_gas_info_new);
@@ -109,7 +109,8 @@ pub fn calc_metadata(
         if config.linear_ap_change_solver { linear_calc_ap_changes } else { calc_ap_changes }(
             program,
             |idx, token_type| pre_gas_info.variable_values[&(idx, token_type)] as usize,
-        )?;
+        )
+        .unwrap();
 
     let mut post_gas_info = if config.linear_gas_solver {
         let enforced_function_costs: OrderedHashMap<FunctionId, i32> = config
@@ -140,7 +141,8 @@ pub fn calc_metadata(
         calc_gas_postcost_info(program, post_function_set_costs, &pre_gas_info, |idx| {
             ap_change_info.variable_values.get(&idx).copied().unwrap_or_default()
         })
-    }?;
+    }
+    .unwrap();
 
     if config.compute_runtime_costs {
         let post_gas_info_runtime = compute_postcost_info::<ConstCost>(
@@ -148,7 +150,8 @@ pub fn calc_metadata(
             &|idx| ap_change_info.variable_values.get(idx).copied().unwrap_or_default(),
             &pre_gas_info,
             &Default::default(),
-        )?;
+        )
+        .unwrap();
         post_gas_info = post_gas_info.combine(post_gas_info_runtime);
     }
 

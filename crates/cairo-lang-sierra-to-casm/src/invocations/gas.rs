@@ -2,6 +2,7 @@ use cairo_lang_casm::builder::{CasmBuilder, Var};
 use cairo_lang_casm::casm_build_extend;
 use cairo_lang_casm::cell_expression::{CellExpression, CellOperator};
 use cairo_lang_casm::operand::{CellRef, DerefOrImmediate, Register};
+use cairo_lang_sierra::extensions::felt252::Felt252BinaryOperator;
 use cairo_lang_sierra::extensions::gas::{CostTokenType, GasConcreteLibfunc};
 use cairo_lang_sierra::program::StatementIdx;
 use cairo_lang_utils::casts::IntoOrPanic;
@@ -10,6 +11,7 @@ use num_bigint::BigInt;
 
 use super::misc::get_pointer_after_program_code;
 use super::{misc, CompiledInvocation, CompiledInvocationBuilder, InvocationError};
+use crate::invocations::felt252::bin_op_helper;
 use crate::invocations::{
     add_input_variables, get_non_fallthrough_statement_id, BuiltinInfo, CostValidationInfo,
 };
@@ -43,40 +45,17 @@ fn build_withdraw_gas(
     let variable_values = &builder.program_info.metadata.gas_info.variable_values;
     validate_all_casm_token_vars_available(variable_values, builder.idx)?;
 
-    // Check if we need to fetch the builtin cost table.
-    if CostTokenType::iter_precost().any(|token| variable_values[&(builder.idx, *token)] > 0) {
-        let (pre_instructions, cost_builtin_ptr) =
-            add_cost_builtin_ptr_fetch_code(&mut casm_builder);
-        casm_build_extend!(casm_builder, tempvar cost_builtin = cost_builtin_ptr;);
-        return build_withdraw_gas_given_cost_table(
-            builder,
-            casm_builder,
-            [range_check, gas_counter, cost_builtin],
-            pre_instructions,
-        );
-    }
-    let requested_count: i64 = variable_values
-        .get(&(builder.idx, CostTokenType::Const))
-        .copied()
-        .ok_or(InvocationError::UnknownVariableData)?;
-
     casm_build_extend! {casm_builder,
-        let orig_range_check = range_check;
-        tempvar has_enough_gas;
-        const requested_count_imm = requested_count;
-        hint TestLessThanOrEqual {
-            lhs: requested_count_imm,
-            rhs: gas_counter
-        } into {dst: has_enough_gas};
-        jump HasEnoughGas if has_enough_gas != 0;
-        const gas_counter_fix = (BigInt::from(u128::MAX) + 1 - requested_count) as BigInt;
-        tempvar gas_diff = gas_counter + gas_counter_fix;
-        assert gas_diff = *(range_check++);
+        const a = 1;
+        localvar n = a;
+        assert n = a;
+        jump HasEnoughGas if n != 0;
         jump Failure;
         HasEnoughGas:
-        tempvar updated_gas = gas_counter - requested_count_imm;
-        assert updated_gas = *(range_check++);
+        tempvar updated_gas = gas_counter;
     };
+
+    dbg!(&casm_builder);
 
     let failure_handle_statement_id = get_non_fallthrough_statement_id(&builder);
     Ok(builder.build_from_casm_builder(
@@ -85,14 +64,45 @@ fn build_withdraw_gas(
             ("Fallthrough", &[&[range_check], &[updated_gas]], None),
             ("Failure", &[&[range_check], &[gas_counter]], Some(failure_handle_statement_id)),
         ],
-        CostValidationInfo {
-            builtin_infos: vec![BuiltinInfo {
-                cost_token_ty: CostTokenType::RangeCheck,
-                start: orig_range_check,
-                end: range_check,
-            }],
-            extra_costs: Some([-requested_count as i32, 0]),
-        },
+        CostValidationInfo { builtin_infos: vec![], extra_costs: Some([0, 0]) },
+    ))
+}
+
+/// Handles the withdraw_gas invocation with the builtin costs argument.
+fn build_builtin_withdraw_gas(
+    builder: CompiledInvocationBuilder<'_>,
+) -> Result<CompiledInvocation, InvocationError> {
+    let [range_check, gas_counter, builtin_cost] = builder.try_get_single_cells()?;
+
+    let mut casm_builder = CasmBuilder::default();
+    add_input_variables! {casm_builder,
+        buffer(1) range_check;
+        deref gas_counter;
+        deref builtin_cost;
+    };
+    let variable_values = &builder.program_info.metadata.gas_info.variable_values;
+    validate_all_casm_token_vars_available(variable_values, builder.idx)?;
+
+    casm_build_extend! {casm_builder,
+        const a = 1;
+        localvar n = a;
+        assert n = a;
+        jump HasEnoughGas if n != 0;
+        jump Failure;
+        HasEnoughGas:
+        tempvar updated_gas = gas_counter;
+    };
+
+    dbg!(&casm_builder);
+
+    let failure_handle_statement_id = get_non_fallthrough_statement_id(&builder);
+    Ok(builder.build_from_casm_builder(
+        casm_builder,
+        [
+            ("Fallthrough", &[&[range_check], &[updated_gas]], None),
+            ("Failure", &[&[range_check], &[gas_counter]], Some(failure_handle_statement_id)),
+        ],
+        CostValidationInfo { builtin_infos: vec![], extra_costs: Some([0, 0]) },
     ))
 }
 
@@ -142,30 +152,6 @@ fn build_redeposit_gas(
         CostValidationInfo { builtin_infos: vec![], extra_costs: Some([requested_count as i32]) },
         pre_instructions,
     ))
-}
-
-/// Handles the withdraw_gas invocation with the builtin costs argument.
-fn build_builtin_withdraw_gas(
-    builder: CompiledInvocationBuilder<'_>,
-) -> Result<CompiledInvocation, InvocationError> {
-    let [range_check, gas_counter, builtin_cost] = builder.try_get_single_cells()?;
-
-    let mut casm_builder = CasmBuilder::default();
-    add_input_variables! {casm_builder,
-        buffer(1) range_check;
-        deref gas_counter;
-        deref builtin_cost;
-    };
-    validate_all_casm_token_vars_available(
-        &builder.program_info.metadata.gas_info.variable_values,
-        builder.idx,
-    )?;
-    build_withdraw_gas_given_cost_table(
-        builder,
-        casm_builder,
-        [range_check, gas_counter, builtin_cost],
-        Default::default(),
-    )
 }
 
 /// Builds the instructions for the `withdraw_gas` libfunc given the builtin cost table.

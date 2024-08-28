@@ -160,6 +160,7 @@ impl ProgramAnnotations {
                     function_id: func.id.clone(),
                     convergence_allowed: false,
                     environment: Environment::new(if gas_usage_check {
+                        // dbg!(func);
                         GasWallet::Value(metadata.gas_info.function_costs[&func.id].clone())
                     } else {
                         GasWallet::Disabled
@@ -191,10 +192,7 @@ impl ProgramAnnotations {
                     &expected_annotations.environment,
                     &annotations.environment,
                 )
-                .map_err(|error| AnnotationError::InconsistentEnvironments {
-                    statement_idx,
-                    error,
-                })?;
+                .unwrap();
                 self.test_references_consistency(&annotations, expected_annotations).map_err(
                     |error| AnnotationError::InconsistentReferencesAnnotation {
                         statement_idx,
@@ -318,12 +316,7 @@ impl ProgramAnnotations {
             ref_value.expression =
                 std::mem::replace(&mut ref_value.expression, ReferenceExpression::zero_sized())
                     .apply_ap_change(branch_changes.ap_change)
-                    .map_err(|error| AnnotationError::ApChangeError {
-                        var_id: var_id.clone(),
-                        source_statement_idx,
-                        destination_statement_idx,
-                        error,
-                    })?;
+                    .unwrap();
         }
         let mut refs = put_results(
             annotations.refs,
@@ -348,11 +341,7 @@ impl ProgramAnnotations {
                 }),
             ),
         )
-        .map_err(|error| AnnotationError::OverrideReferenceError {
-            source_statement_idx,
-            destination_statement_idx,
-            var_id: error.var_id(),
-        })?;
+        .unwrap();
 
         // Since some variables on the stack may have been consumed by the libfunc, we need to
         // find the new stack size. This is done by searching from the bottom of the stack until we
@@ -390,11 +379,7 @@ impl ProgramAnnotations {
             }
             ApTrackingChange::None => {
                 update_ap_tracking(annotations.environment.ap_tracking, branch_changes.ap_change)
-                    .map_err(|error| AnnotationError::ApTrackingError {
-                        source_statement_idx,
-                        destination_statement_idx,
-                        error,
-                    })?
+                    .unwrap()
             }
         };
 
@@ -412,11 +397,7 @@ impl ProgramAnnotations {
                         .environment
                         .gas_wallet
                         .update(branch_changes.gas_change)
-                        .map_err(|error| AnnotationError::GasWalletError {
-                            source_statement_idx,
-                            destination_statement_idx,
-                            error,
-                        })?,
+                        .unwrap(),
                 },
             },
         )

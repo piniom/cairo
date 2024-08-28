@@ -75,7 +75,7 @@ fn build_felt252_op_with_const(
 
 /// Helper for the build felt252 binary op functions: returns the res Var and the extra costs for a
 /// binary operation.
-fn bin_op_helper(
+pub fn bin_op_helper(
     casm_builder: &mut CasmBuilder,
     a: Var,
     b: Var,

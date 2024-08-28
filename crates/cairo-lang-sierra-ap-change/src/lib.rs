@@ -88,7 +88,7 @@ pub fn calc_ap_changes<TokenUsages: Fn(StatementIdx, CostTokenType) -> usize>(
     let registry = ProgramRegistry::<CoreType, CoreLibfunc>::new(program)?;
     let type_sizes = get_type_size_map(program, &registry).unwrap();
     let equations = generate_equations::generate_equations(program, |idx, libfunc_id| {
-        let libfunc = registry.get_libfunc(libfunc_id)?;
+        let libfunc = registry.get_libfunc(libfunc_id).unwrap();
         core_libfunc_ap_change::core_libfunc_ap_change(
             libfunc,
             &InvocationApChangeInfoProviderForEqGen {

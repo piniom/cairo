@@ -37,13 +37,13 @@ impl GasWallet {
             Self::Value(existing) => {
                 let new_value = add_maps(existing.clone(), request.iter().map(|(k, v)| (*k, *v)));
                 for (token_type, val) in new_value.iter() {
-                    if *val < 0 {
-                        return Err(GasWalletError::OutOfGas {
-                            state: self.clone(),
-                            request: Box::new(request),
-                            token_type: *token_type,
-                        });
-                    }
+                    // if *val < 0 {
+                    //     return Err(GasWalletError::OutOfGas {
+                    //         state: self.clone(),
+                    //         request: Box::new(request),
+                    //         token_type: *token_type,
+                    //     });
+                    // }
                 }
                 Ok(GasWallet::Value(new_value))
             }

@@ -150,7 +150,7 @@ impl WithdrawGasBranchInfo {
                 steps += 1;
             }
         };
-        ConstCost { steps, range_checks: 1, holes: 0, range_checks96: 0 }
+        ConstCost { steps, range_checks: 0, holes: 0, range_checks96: 0 }
     }
 }
 

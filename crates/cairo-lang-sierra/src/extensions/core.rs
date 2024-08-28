@@ -97,6 +97,54 @@ define_type_hierarchy! {
     }, CoreTypeConcrete
 }
 
+// impl std::fmt::Debug for CoreTypeConcrete {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             CoreTypeConcrete::Array(t) => write!(f, "Array(?)"),
+//             CoreTypeConcrete::Coupon(t) => write!(f, "Coupon(?)"),
+//             CoreTypeConcrete::Bitwise(t) => write!(f, "Bitwise(?)"),
+//             CoreTypeConcrete::Box(t) => write!(f, "Box(?)"),
+//             CoreTypeConcrete::Circuit(t) => write!(f, "Circuit(?)"),
+//             CoreTypeConcrete::Const(t) => write!(f, "Const(?)"),
+//             CoreTypeConcrete::EcOp(t) => write!(f, "EcOp(?)"),
+//             CoreTypeConcrete::EcPoint(t) => write!(f, "EcPoint(?)"),
+//             CoreTypeConcrete::EcState(t) => write!(f, "EcState(?)"),
+//             CoreTypeConcrete::Felt252(t) => write!(f, "Felt252(?)"),
+//             CoreTypeConcrete::GasBuiltin(t) => write!(f, "GasBuiltin(?)"),
+//             CoreTypeConcrete::BuiltinCosts(t) => write!(f, "BuiltinCosts(?)"),
+//             CoreTypeConcrete::Uint8(t) => write!(f, "Uint8(?)"),
+//             CoreTypeConcrete::Uint16(t) => write!(f, "Uint16(?)"),
+//             CoreTypeConcrete::Uint32(t) => write!(f, "Uint32(?)"),
+//             CoreTypeConcrete::Uint64(t) => write!(f, "Uint64(?)"),
+//             CoreTypeConcrete::Uint128(t) => write!(f, "Uint128(?)"),
+//             CoreTypeConcrete::Uint128MulGuarantee(t) => write!(f, "Uint128MulGuarantee(?)"),
+//             CoreTypeConcrete::Sint8(t) => write!(f, "Sint8(?)"),
+//             CoreTypeConcrete::Sint16(t) => write!(f, "Sint16(?)"),
+//             CoreTypeConcrete::Sint32(t) => write!(f, "Sint32(?)"),
+//             CoreTypeConcrete::Sint64(t) => write!(f, "Sint64(?)"),
+//             CoreTypeConcrete::Sint128(t) => write!(f, "Sint128(?)"),
+//             CoreTypeConcrete::NonZero(t) => write!(f, "NonZero(?)"),
+//             CoreTypeConcrete::Nullable(t) => write!(f, "Nullable(?)"),
+//             CoreTypeConcrete::RangeCheck(t) => write!(f, "RangeCheck(?)"),
+//             CoreTypeConcrete::RangeCheck96(t) => write!(f, "RangeCheck96(?)"),
+//             CoreTypeConcrete::Uninitialized(t) => write!(f, "Uninitialized(?)"),
+//             CoreTypeConcrete::Enum(t) => write!(f, "Enum(?)"),
+//             CoreTypeConcrete::Struct(t) => write!(f, "Struct(?)"),
+//             CoreTypeConcrete::Felt252Dict(t) => write!(f, "Felt252Dict(?)"),
+//             CoreTypeConcrete::Felt252DictEntry(t) => write!(f, "Felt252DictEntry(?)"),
+//             CoreTypeConcrete::SquashedFelt252Dict(t) => write!(f, "SquashedFelt252Dict(?)"),
+//             CoreTypeConcrete::Pedersen(t) => write!(f, "Pedersen(?)"),
+//             CoreTypeConcrete::Poseidon(t) => write!(f, "Poseidon(?)"),
+//             CoreTypeConcrete::Span(t) => write!(f, "Span(?)"),
+//             CoreTypeConcrete::StarkNet(t) => write!(f, "StarkNet(?)"),
+//             CoreTypeConcrete::SegmentArena(t) => write!(f, "SegmentArena(?)"),
+//             CoreTypeConcrete::Snapshot(t) => write!(f, "Snapshot(?)"),
+//             CoreTypeConcrete::Bytes31(t) => write!(f, "Bytes31(?)"),
+//             CoreTypeConcrete::BoundedInt(t) => write!(f, "BoundedInt(?)"),
+//         }
+//     }
+// }
+
 define_libfunc_hierarchy! {
     pub enum CoreLibfunc {
         ApTracking(ApTrackingLibfunc),

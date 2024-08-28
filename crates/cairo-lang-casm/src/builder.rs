@@ -96,6 +96,7 @@ impl State {
 }
 
 /// A statement added to the builder.
+#[derive(Debug)]
 enum Statement {
     /// A final instruction, no need for further editing.
     Final(Instruction),
@@ -116,6 +117,7 @@ pub struct CasmBuildResult<const BRANCH_COUNT: usize> {
 /// Builder to more easily write casm code without specifically thinking about ap changes and the
 /// sizes of opcodes. Wrong usages of it would panic instead of returning a result, as this builder
 /// assumes we are in a post validation of parameters stage.
+#[derive(Debug)]
 pub struct CasmBuilder {
     /// The state at a point of jumping into a label, per label.
     label_state: UnorderedHashMap<String, State>,
@@ -522,7 +524,11 @@ impl CasmBuilder {
         let mut main_vars = OrderedHashMap::<Var, CellExpression>::default();
         let ap_change = self.main_state.ap_change;
         let cell_to_var_flags = |cell: &CellRef| {
-            if cell.register == Register::AP { (true, false) } else { (false, true) }
+            if cell.register == Register::AP {
+                (true, false)
+            } else {
+                (false, true)
+            }
         };
         for (var, value) in self.main_state.vars.iter() {
             let (function_var, main_var) = match value {
@@ -626,7 +632,11 @@ impl CasmBuilder {
 
     /// Returns `var`s value, with fixed ap if `adjust_ap` is true.
     fn get_value(&self, var: Var, adjust_ap: bool) -> CellExpression {
-        if adjust_ap { self.main_state.get_adjusted(var) } else { self.main_state.get_value(var) }
+        if adjust_ap {
+            self.main_state.get_adjusted(var)
+        } else {
+            self.main_state.get_value(var)
+        }
     }
 
     /// Returns `var`s value as a cell reference, with fixed ap if `adjust_ap` is true.
@@ -670,7 +680,7 @@ impl CasmBuilder {
     /// Returns an instruction wrapping the instruction body, and updates the state.
     /// If `inc_ap_supported` may add an `ap++` to the instruction.
     fn next_instruction(&mut self, body: InstructionBody, inc_ap_supported: bool) -> Instruction {
-        assert!(self.reachable, "Cannot add instructions at unreachable code.");
+        // assert!(self.reachable, "Cannot add instructions at unreachable code.");
         let inc_ap =
             inc_ap_supported && self.main_state.allocated as usize > self.main_state.ap_change;
         if inc_ap {

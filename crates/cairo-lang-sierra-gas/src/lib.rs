@@ -169,7 +169,7 @@ impl CostInfoProvider for ComputeCostInfoProvider {
 
 /// Calculates gas pre-cost information for a given program - the gas costs of non-step tokens.
 pub fn compute_precost_info(program: &Program) -> Result<GasInfo, CostError> {
-    let cost_provider = ComputeCostInfoProvider::new(program)?;
+    let cost_provider = ComputeCostInfoProvider::new(program).unwrap();
     compute_costs::compute_costs(
         program,
         &(|libfunc_id| {
