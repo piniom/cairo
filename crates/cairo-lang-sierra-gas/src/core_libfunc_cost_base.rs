@@ -305,10 +305,12 @@ pub fn core_libfunc_cost(
                 }
             }
             ArrayConcreteLibfunc::Len(libfunc) => {
-                vec![
-                    ConstCost::steps(if info_provider.type_size(&libfunc.ty) == 1 { 0 } else { 1 })
-                        .into(),
-                ]
+                vec![ConstCost::steps(if info_provider.type_size(&libfunc.ty) == 1 {
+                    0
+                } else {
+                    1
+                })
+                .into()]
             }
         },
         Uint8(libfunc) => uint_libfunc_cost(libfunc),
@@ -564,15 +566,13 @@ pub fn core_libfunc_cost(
             }
             CircuitConcreteLibfunc::InitCircuitData(libfunc) => {
                 let info = info_provider.circuit_info(&libfunc.ty);
-                vec![
-                    ConstCost {
-                        steps: 0,
-                        holes: 0,
-                        range_checks: 0,
-                        range_checks96: info.rc96_usage().into_or_panic(),
-                    }
-                    .into(),
-                ]
+                vec![ConstCost {
+                    steps: 0,
+                    holes: 0,
+                    range_checks: 0,
+                    range_checks96: info.rc96_usage().into_or_panic(),
+                }
+                .into()]
             }
             CircuitConcreteLibfunc::FailureGuaranteeVerify(_) => {
                 // The libfunc costs 1 MulMod instance (in addition to the cost below).
@@ -628,13 +628,21 @@ pub fn core_libfunc_postcost<Ops: CostOperations, InfoProvider: InvocationCostIn
                 }
             }
             BranchCost::WithdrawGas(info) => {
-                let total_cost = ops.const_cost(
-                    info.const_cost(|token_type| info_provider.token_usages(token_type)),
-                );
+                let ap_change = info_provider.ap_change_var_value();
                 if info.success {
-                    ops.sub(total_cost, ops.statement_var_cost(CostTokenType::Const))
+                    ops.const_cost(ConstCost {
+                        steps: 3,
+                        holes: ap_change as i32,
+                        range_checks: 0,
+                        range_checks96: 0,
+                    })
                 } else {
-                    total_cost
+                    ops.const_cost(ConstCost {
+                        steps: 4,
+                        holes: ap_change as i32,
+                        range_checks: 0,
+                        range_checks96: 0,
+                    })
                 }
             }
             BranchCost::RedepositGas => ops.add(
@@ -694,7 +702,8 @@ pub fn core_libfunc_precost<Ops: CostOperations, InfoProvider: CostInfoProvider>
             }
             BranchCost::WithdrawGas(info) => {
                 if info.success {
-                    ops.sub(ops.steps(0), statement_vars_cost(ops, CostTokenType::iter_precost()))
+                    ops.steps(0)
+                    // ops.sub(ops.steps(0), statement_vars_cost(ops, CostTokenType::iter_precost()))
                 } else {
                     ops.steps(0)
                 }

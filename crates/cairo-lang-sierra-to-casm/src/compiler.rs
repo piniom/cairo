@@ -491,13 +491,8 @@ pub fn compile(
                         metadata,
                         &return_refs,
                     )
-                    .map_err(|err| Box::new(err.into()))?;
-                check_references_on_stack(&return_refs).map_err(|error| match error {
-                    InvocationError::InvalidReferenceExpressionForArgument => {
-                        CompilationError::ReturnArgumentsNotOnStack { statement_idx }
-                    }
-                    _ => CompilationError::InvocationError { statement_idx, error },
-                })?;
+                    .unwrap();
+                check_references_on_stack(&return_refs).unwrap();
 
                 let start_offset = program_offset;
 
@@ -518,21 +513,16 @@ pub fn compile(
             Statement::Invocation(invocation) => {
                 let (annotations, invoke_refs) = program_annotations
                     .get_annotations_after_take_args(statement_idx, invocation.args.iter())
-                    .map_err(|err| Box::new(err.into()))?;
-
-                let libfunc = registry
-                    .get_libfunc(&invocation.libfunc_id)
-                    .map_err(CompilationError::ProgramRegistryError)?;
-                check_basic_structure(statement_idx, invocation, libfunc)?;
+                    .unwrap();
+                let libfunc = registry.get_libfunc(&invocation.libfunc_id).unwrap();
+                check_basic_structure(statement_idx, invocation, libfunc).unwrap();
 
                 let param_types: Vec<_> = libfunc
                     .param_signatures()
                     .iter()
                     .map(|param_signature| param_signature.ty.clone())
                     .collect();
-                check_types_match(&invoke_refs, &param_types).map_err(|error| {
-                    Box::new(AnnotationError::ReferencesError { statement_idx, error }.into())
-                })?;
+                check_types_match(&invoke_refs, &param_types).unwrap();
                 invoke_refs.iter().for_each(|r| r.validate(&type_sizes));
                 let compiled_invocation = compile_invocation(
                     ProgramInfo {
@@ -549,7 +539,7 @@ pub fn compile(
                     &invoke_refs,
                     annotations.environment,
                 )
-                .map_err(|error| CompilationError::InvocationError { statement_idx, error })?;
+                .unwrap();
 
                 let start_offset = program_offset;
 
@@ -614,7 +604,7 @@ pub fn compile(
                             branch_changes,
                             branching_libfunc,
                         )
-                        .map_err(|err| Box::new(err.into()))?;
+                        .unwrap();
                 }
             }
         }
