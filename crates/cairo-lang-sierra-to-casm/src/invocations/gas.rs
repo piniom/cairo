@@ -40,36 +40,19 @@ fn build_withdraw_gas(
         buffer(1) range_check;
         deref gas_counter;
     };
-    let variable_values = &builder.program_info.metadata.gas_info.variable_values;
-    validate_all_casm_token_vars_available(variable_values, builder.idx)?;
-
-    // Check if we need to fetch the builtin cost table.
-    if CostTokenType::iter_precost().any(|token| variable_values[&(builder.idx, *token)] > 0) {
-        let (pre_instructions, cost_builtin_ptr) =
-            add_cost_builtin_ptr_fetch_code(&mut casm_builder);
-        casm_build_extend!(casm_builder, tempvar cost_builtin = cost_builtin_ptr;);
-        return build_withdraw_gas_given_cost_table(
-            builder,
-            casm_builder,
-            [range_check, gas_counter, cost_builtin],
-            pre_instructions,
-        );
-    }
-    let requested_count: i64 = variable_values
-        .get(&(builder.idx, CostTokenType::Const))
-        .copied()
-        .ok_or(InvocationError::UnknownVariableData)?;
+    // let variable_values = &builder.program_info.metadata.gas_info.variable_values;
+    // validate_all_casm_token_vars_available(variable_values, builder.idx)?;
 
     casm_build_extend! {casm_builder,
-        let orig_range_check = range_check;
+        let _orig_range_check = range_check;
         tempvar has_enough_gas;
-        const requested_count_imm = requested_count;
+        const requested_count_imm = 0;
         hint TestLessThanOrEqual {
             lhs: requested_count_imm,
             rhs: gas_counter
         } into {dst: has_enough_gas};
         jump HasEnoughGas if has_enough_gas != 0;
-        const gas_counter_fix = (BigInt::from(u128::MAX) + 1 - requested_count) as BigInt;
+        const gas_counter_fix = (BigInt::from(u128::MAX) + 1 - 0) as BigInt;
         tempvar gas_diff = gas_counter + gas_counter_fix;
         assert gas_diff = *(range_check++);
         jump Failure;
@@ -78,6 +61,8 @@ fn build_withdraw_gas(
         assert updated_gas = *(range_check++);
     };
 
+    // dbg!(&casm_builder);
+
     let failure_handle_statement_id = get_non_fallthrough_statement_id(&builder);
     Ok(builder.build_from_casm_builder(
         casm_builder,
@@ -85,14 +70,50 @@ fn build_withdraw_gas(
             ("Fallthrough", &[&[range_check], &[updated_gas]], None),
             ("Failure", &[&[range_check], &[gas_counter]], Some(failure_handle_statement_id)),
         ],
-        CostValidationInfo {
-            builtin_infos: vec![BuiltinInfo {
-                cost_token_ty: CostTokenType::RangeCheck,
-                start: orig_range_check,
-                end: range_check,
-            }],
-            extra_costs: Some([-requested_count as i32, 0]),
-        },
+        CostValidationInfo { builtin_infos: vec![], extra_costs: Some([0, 0]) },
+    ))
+}
+
+/// Handles the withdraw_gas invocation with the builtin costs argument.
+fn build_builtin_withdraw_gas(
+    builder: CompiledInvocationBuilder<'_>,
+) -> Result<CompiledInvocation, InvocationError> {
+    let [range_check, gas_counter, builtin_cost] = builder.try_get_single_cells()?;
+
+    let mut casm_builder = CasmBuilder::default();
+
+    add_input_variables! {casm_builder,
+        buffer(1) range_check;
+        deref gas_counter;
+        deref builtin_cost;
+    };
+
+    let _builtin_cost = builtin_cost;
+
+    // let variable_values = &builder.program_info.metadata.gas_info.variable_values;
+    // validate_all_casm_token_vars_available(variable_values, builder.idx)?;
+
+    casm_build_extend! {casm_builder,
+        const a = 1;
+        localvar n = a;
+        assert n = a;
+        jump HasEnoughGas if n != 0;
+        jump Failure;
+        HasEnoughGas:
+        tempvar updated_gas = gas_counter;
+        assert updated_gas = *(range_check++);
+    };
+
+    // dbg!(&casm_builder);
+
+    let failure_handle_statement_id = get_non_fallthrough_statement_id(&builder);
+    Ok(builder.build_from_casm_builder(
+        casm_builder,
+        [
+            ("Fallthrough", &[&[range_check], &[updated_gas]], None),
+            ("Failure", &[&[range_check], &[gas_counter]], Some(failure_handle_statement_id)),
+        ],
+        CostValidationInfo { builtin_infos: vec![], extra_costs: Some([0, 0]) },
     ))
 }
 
@@ -126,7 +147,9 @@ fn build_redeposit_gas(
     add_input_variables! {casm_builder,
         deref gas_counter;
     };
-    let (pre_instructions, cost_builtin_ptr) = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let pre_instructions  = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let cost_builtin_ptr =
+        casm_builder.add_var(CellExpression::Immediate(BigInt::from(1234567)));
     casm_build_extend! {casm_builder,
         tempvar builtin_cost = cost_builtin_ptr;
     };
@@ -144,31 +167,8 @@ fn build_redeposit_gas(
     ))
 }
 
-/// Handles the withdraw_gas invocation with the builtin costs argument.
-fn build_builtin_withdraw_gas(
-    builder: CompiledInvocationBuilder<'_>,
-) -> Result<CompiledInvocation, InvocationError> {
-    let [range_check, gas_counter, builtin_cost] = builder.try_get_single_cells()?;
-
-    let mut casm_builder = CasmBuilder::default();
-    add_input_variables! {casm_builder,
-        buffer(1) range_check;
-        deref gas_counter;
-        deref builtin_cost;
-    };
-    validate_all_casm_token_vars_available(
-        &builder.program_info.metadata.gas_info.variable_values,
-        builder.idx,
-    )?;
-    build_withdraw_gas_given_cost_table(
-        builder,
-        casm_builder,
-        [range_check, gas_counter, builtin_cost],
-        Default::default(),
-    )
-}
-
 /// Builds the instructions for the `withdraw_gas` libfunc given the builtin cost table.
+#[allow(dead_code)]
 fn build_withdraw_gas_given_cost_table(
     builder: CompiledInvocationBuilder<'_>,
     mut casm_builder: CasmBuilder,
@@ -264,6 +264,7 @@ fn validate_all_casm_token_vars_available(
 ) -> Result<(), InvocationError> {
     for token in CostTokenType::iter_casm_tokens() {
         if !variable_values.contains_key(&(idx, *token)) {
+            dbg!(idx, token);
             return Err(InvocationError::UnknownVariableData);
         }
     }
@@ -275,7 +276,9 @@ fn build_get_builtin_costs(
     builder: CompiledInvocationBuilder<'_>,
 ) -> Result<CompiledInvocation, InvocationError> {
     let mut casm_builder = CasmBuilder::default();
-    let (pre_instructions, cost_builtin_ptr) = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let pre_instructions  = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let mut cost_builtin_ptr =
+        casm_builder.add_var(CellExpression::Immediate(BigInt::from(1)));
     Ok(builder.build_from_casm_builder_ex(
         casm_builder,
         [("Fallthrough", &[&[cost_builtin_ptr]], None)],
@@ -290,15 +293,11 @@ fn build_get_builtin_costs(
 /// builtin table pointer.
 fn add_cost_builtin_ptr_fetch_code(
     casm_builder: &mut CasmBuilder,
-) -> (InstructionsWithRelocations, Var) {
+) -> InstructionsWithRelocations {
     const COST_TABLE_OFFSET: i32 = 1;
     let (pre_instructions, ap_change) = get_pointer_after_program_code(COST_TABLE_OFFSET);
     casm_builder.increase_ap_change(ap_change);
-    (
-        pre_instructions,
-        casm_builder.add_var(CellExpression::DoubleDeref(
-            CellRef { register: Register::AP, offset: (ap_change - 1).into_or_panic() },
-            0,
-        )),
-    )
+    
+    pre_instructions
+    
 }

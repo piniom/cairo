@@ -202,10 +202,10 @@ pub fn core_libfunc_ap_change<InfoProvider: InvocationApChangeInfoProvider>(
                     });
                 vec![
                     ApChange::Known(cost_computation_ap_change + 2),
-                    ApChange::Known(cost_computation_ap_change + 3),
+                    ApChange::Known(cost_computation_ap_change + 1),
                 ]
             }
-            GasConcreteLibfunc::GetBuiltinCosts(_) => vec![ApChange::Known(3)],
+            GasConcreteLibfunc::GetBuiltinCosts(_) => vec![ApChange::Known(0)],
         },
         Uint8(libfunc) => uint_ap_change(libfunc),
         Uint16(libfunc) => uint_ap_change(libfunc),
