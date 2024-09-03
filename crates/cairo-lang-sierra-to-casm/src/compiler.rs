@@ -524,6 +524,7 @@ pub fn compile(
                     .collect();
                 check_types_match(&invoke_refs, &param_types).unwrap();
                 invoke_refs.iter().for_each(|r| r.validate(&type_sizes));
+                // dbg!(&libfunc);
                 let compiled_invocation = compile_invocation(
                     ProgramInfo {
                         metadata,

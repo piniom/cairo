@@ -253,7 +253,7 @@ pub fn core_libfunc_cost(
                     }),
                 ]
             }
-            GetBuiltinCosts(_) => vec![ConstCost::steps(3).into()],
+            GetBuiltinCosts(_) => vec![ConstCost::steps(0).into()],
         },
         BranchAlign(_) => vec![BranchCost::BranchAlign],
         Array(libfunc) => match libfunc {
@@ -631,7 +631,7 @@ pub fn core_libfunc_postcost<Ops: CostOperations, InfoProvider: InvocationCostIn
                 let ap_change = info_provider.ap_change_var_value();
                 if info.success {
                     ops.const_cost(ConstCost {
-                        steps: 3,
+                        steps: if info.with_builtin_costs {5} else {3},
                         holes: ap_change as i32,
                         range_checks: 0,
                         range_checks96: 0,

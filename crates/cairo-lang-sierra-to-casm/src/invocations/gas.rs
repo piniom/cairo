@@ -90,8 +90,8 @@ fn build_builtin_withdraw_gas(
 
     let _builtin_cost = builtin_cost;
 
-    let variable_values = &builder.program_info.metadata.gas_info.variable_values;
-    validate_all_casm_token_vars_available(variable_values, builder.idx)?;
+    // let variable_values = &builder.program_info.metadata.gas_info.variable_values;
+    // validate_all_casm_token_vars_available(variable_values, builder.idx)?;
 
     casm_build_extend! {casm_builder,
         const a = 1;
@@ -147,7 +147,9 @@ fn build_redeposit_gas(
     add_input_variables! {casm_builder,
         deref gas_counter;
     };
-    let (pre_instructions, cost_builtin_ptr) = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let pre_instructions  = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let cost_builtin_ptr =
+        casm_builder.add_var(CellExpression::Immediate(BigInt::from(1234567)));
     casm_build_extend! {casm_builder,
         tempvar builtin_cost = cost_builtin_ptr;
     };
@@ -274,7 +276,9 @@ fn build_get_builtin_costs(
     builder: CompiledInvocationBuilder<'_>,
 ) -> Result<CompiledInvocation, InvocationError> {
     let mut casm_builder = CasmBuilder::default();
-    let (pre_instructions, cost_builtin_ptr) = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let pre_instructions  = add_cost_builtin_ptr_fetch_code(&mut casm_builder);
+    let mut cost_builtin_ptr =
+        casm_builder.add_var(CellExpression::Immediate(BigInt::from(1)));
     Ok(builder.build_from_casm_builder_ex(
         casm_builder,
         [("Fallthrough", &[&[cost_builtin_ptr]], None)],
@@ -289,15 +293,11 @@ fn build_get_builtin_costs(
 /// builtin table pointer.
 fn add_cost_builtin_ptr_fetch_code(
     casm_builder: &mut CasmBuilder,
-) -> (InstructionsWithRelocations, Var) {
+) -> InstructionsWithRelocations {
     const COST_TABLE_OFFSET: i32 = 1;
     let (pre_instructions, ap_change) = get_pointer_after_program_code(COST_TABLE_OFFSET);
     casm_builder.increase_ap_change(ap_change);
-    (
-        pre_instructions,
-        casm_builder.add_var(CellExpression::DoubleDeref(
-            CellRef { register: Register::AP, offset: (ap_change - 1).into_or_panic() },
-            0,
-        )),
-    )
+    
+    pre_instructions
+    
 }

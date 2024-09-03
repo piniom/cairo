@@ -23,6 +23,7 @@ pub fn build(
 fn build_pedersen_hash(
     builder: CompiledInvocationBuilder<'_>,
 ) -> Result<CompiledInvocation, InvocationError> {
+    dbg!(1);
     let [pedersen, x, y] = builder.try_get_single_cells()?;
 
     let mut casm_builder = CasmBuilder::default();
@@ -36,6 +37,7 @@ fn build_pedersen_hash(
         assert y = *(pedersen++);
         let result = *(pedersen++);
     };
+    dbg!(1);
     Ok(builder.build_from_casm_builder(
         casm_builder,
         [("Fallthrough", &[&[pedersen], &[result]], None)],

@@ -1,3 +1,5 @@
+use std::vec;
+
 use cairo_lang_casm::builder::{CasmBuilder, Var};
 use cairo_lang_casm::cell_expression::CellExpression;
 use cairo_lang_casm::{casm, casm_build_extend};
@@ -241,28 +243,13 @@ pub fn validate_under_limit<const K: u8>(
 ///
 /// Returns the instructions and the corresponding ap-change.
 pub fn get_pointer_after_program_code(offset: i32) -> (InstructionsWithRelocations, usize) {
-    let ctx = casm! {
-        // The relocation table will point the `call` to the end of the program where there will
-        // be a `ret` instruction.
-        call rel 0;
-        // After calling an empty function, `[ap - 1]` contains the current `pc`.
-        // Using the relocations below, the immediate value (`offset`) will be changed so that it
-        // will compute a pointer to the second cell after the end of the program, which will
-        // contain the pointer to the builtin cost array.
-        [ap] = [ap - 1] + (offset), ap++;
-    };
-    let relocations = vec![
-        RelocationEntry { instruction_idx: 0, relocation: Relocation::EndOfProgram },
-        RelocationEntry { instruction_idx: 1, relocation: Relocation::EndOfProgram },
-    ];
-
     (
         InstructionsWithRelocations {
-            instructions: ctx.instructions,
-            relocations,
-            cost: ConstCost { steps: 3, ..Default::default() },
+            instructions: vec![],
+            relocations: vec![],
+            cost: ConstCost { steps: 0, ..Default::default() },
         },
-        3,
+        0,
     )
 }
 
