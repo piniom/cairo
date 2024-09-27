@@ -74,4 +74,5 @@ pub(super) const IMPLICIT_PRECEDENCE: &[&str] = &[
     "core::circuit::MulMod",
     "core::gas::GasBuiltin",
     "System",
+    "Dojo",
 ];

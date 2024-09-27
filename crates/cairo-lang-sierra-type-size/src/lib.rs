@@ -16,7 +16,7 @@ pub fn get_type_size_map(
     let mut type_sizes = TypeSizeMap::default();
     for declaration in &program.type_declarations {
         let size = match registry.get_type(&declaration.id).ok()? {
-            CoreTypeConcrete::Coupon(_) => Some(0),
+            CoreTypeConcrete::Coupon(_) | CoreTypeConcrete::Dojo(_) => Some(0),
             CoreTypeConcrete::Felt252(_)
             | CoreTypeConcrete::GasBuiltin(_)
             | CoreTypeConcrete::Bitwise(_)

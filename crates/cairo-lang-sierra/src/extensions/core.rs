@@ -10,6 +10,7 @@ use super::circuit::{CircuitLibFunc, CircuitType};
 use super::const_type::{ConstLibfunc, ConstType};
 use super::coupon::{CouponLibfunc, CouponType};
 use super::debug::DebugLibfunc;
+use super::dojo::DojoType;
 use super::drop::DropLibfunc;
 use super::duplicate::DupLibfunc;
 use super::ec::{EcLibfunc, EcOpType, EcPointType, EcStateType};
@@ -94,6 +95,7 @@ define_type_hierarchy! {
         Snapshot(SnapshotType),
         Bytes31(Bytes31Type),
         BoundedInt(BoundedIntType),
+        Dojo(DojoType),
     }, CoreTypeConcrete
 }
 
@@ -141,6 +143,7 @@ impl std::fmt::Debug for CoreType {
             CoreType::Snapshot(_) => "Snapshot",
             CoreType::Bytes31(_) => "Bytes31",
             CoreType::BoundedInt(_) => "BoundedInt",
+            CoreType::Dojo(_) => "Dojo",
         };
         write!(f, "{}", variant_name)
     }
