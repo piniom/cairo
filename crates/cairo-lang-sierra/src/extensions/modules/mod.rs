@@ -20,6 +20,7 @@ pub mod const_type;
 pub mod consts;
 pub mod coupon;
 pub mod debug;
+pub mod dojo;
 pub mod drop;
 pub mod duplicate;
 pub mod ec;

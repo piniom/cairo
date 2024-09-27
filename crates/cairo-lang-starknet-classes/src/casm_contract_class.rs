@@ -5,6 +5,7 @@ use cairo_lang_casm::hints::{Hint, PythonicHint};
 use cairo_lang_sierra::extensions::array::ArrayType;
 use cairo_lang_sierra::extensions::bitwise::BitwiseType;
 use cairo_lang_sierra::extensions::circuit::{AddModType, MulModType};
+use cairo_lang_sierra::extensions::dojo::DojoType;
 use cairo_lang_sierra::extensions::ec::EcOpType;
 use cairo_lang_sierra::extensions::enm::EnumType;
 use cairo_lang_sierra::extensions::felt252::Felt252Type;
@@ -460,6 +461,7 @@ impl CasmContractClass {
             RangeCheck96Type::id(),
             AddModType::id(),
             MulModType::id(),
+            DojoType::id(),
         ]);
 
         let as_casm_entry_point = |contract_entry_point: ContractEntryPoint| {
